@@ -6,121 +6,72 @@
 # Modified :     -
 ################################################################################
 
-################################################################################
 # Dependencies
 require(igraph)
 require(mvtnorm)
 
 # Load sample matrices
-source('~/Desktop/matrices.R')
-source('~/Desktop/functions.R')
-################################################################################
+source('~/Desktop/community/matrices.R')
+source('~/Desktop/community/functions.R')
 
 # Matrices
 set.seed(666)
+XI <- mvtnorm::rmvnorm(mean = rep(0, 9), n = 1e5, sigma = WI)
 X0 <- mvtnorm::rmvnorm(mean = rep(0, 9), n = 1e5, sigma = W0)
 X1 <- mvtnorm::rmvnorm(mean = rep(0, 9), n = 1e5, sigma = W1)
+X2 <- mvtnorm::rmvnorm(mean = rep(0, 9), n = 1e5, sigma = W2)
+X3 <- mvtnorm::rmvnorm(mean = rep(0, 9), n = 1e5, sigma = W3)
 X4 <- mvtnorm::rmvnorm(mean = rep(0, 21), n = 1e5, sigma = W4)
+X5 <- mvtnorm::rmvnorm(mean = rep(0, 9), n = 1e5, sigma = W5)
+X6 <- mvtnorm::rmvnorm(mean = rep(0, 18), n = 1e5, sigma = W6)
+X7 <- mvtnorm::rmvnorm(mean = rep(0, 18), n = 1e5, sigma = W7)
+
+# Graph objects
+w <- TRUE
+m <- 'undirected'
+GI <- graph_from_adjacency_matrix(abs(cov(XI)), weighted = w, mode = m)
+G0 <- graph_from_adjacency_matrix(abs(cov(X0)), weighted = w, mode = m)
+G1 <- graph_from_adjacency_matrix(abs(cov(X1)), weighted = w, mode = m)
+G2 <- graph_from_adjacency_matrix(abs(cov(X2)), weighted = w, mode = m)
+G3 <- graph_from_adjacency_matrix(abs(cov(X3)), weighted = w, mode = m)
+G4 <- graph_from_adjacency_matrix(abs(cov(X4)), weighted = w, mode = m)
+G5 <- graph_from_adjacency_matrix(abs(cov(X5)), weighted = w, mode = m)
+G6 <- graph_from_adjacency_matrix(abs(cov(X6)), weighted = w, mode = m)
+G7 <- graph_from_adjacency_matrix(abs(cov(X7)), weighted = w, mode = m)
+
+
+G4 <- graph_from_adjacency_matrix(round(abs(cov(X4)), 1), weighted = w, mode = m)
+
+G4 <- graph_from_adjacency_matrix(abs(cov(X4)), weighted = w, mode = m)
+G5 <- graph_from_adjacency_matrix(round(abs(cov(X4)), 1), weighted = w, mode = m)
+
+
+
+
 
 # Try several methods of community detection
+repeat {
+  aux <- try(comm.detection(XI, GI, 8), silent = TRUE)
+  if (class(aux) != 'try-error') {
+    break
+  }
+}
+repeat {
+  aux <- try(comm.detection(X0, G0, 3), silent = TRUE)
+  if (class(aux) != 'try-error') {
+    break
+  }
+}
+
+
+
 comm.detection(X4, G4, 4, 7)
+comm.detection(X4, G4, 4, 7, short = TRUE)
 
-################################################################################
-comm.detection <- function(X, G, k1, k2 = NULL) {
-################################################################################
-  # Algorithm names
-  algs <- c(paste('SC Unnormalised (k = ', k2,')', sep = ''),
-            paste('SC Shi-Malik (k = ', k2,')', sep = ''),
-            paste('SC Ng-Weiss-Joran (k = ', k2,')', sep = ''),
-            paste('SC Unnormalised (k = ', k1,')', sep = ''),
-            paste('SC Shi-Malik (k = ', k1,')', sep = ''),
-            paste('SC Ng-Weiss-Joran (k = ', k1,')', sep = ''),
-            'Girvan-Newman', 'Fast Greedy', 'Infomap', 'Label propagation',
-            'Modularity maximisation', 'Louvain', 'Spinglass', 'Walktrap',
-            'Optimal')
-
-  # Spectral clustering
-  if (! is.null(k2)) {
-    res01 <- sclust(X, k = k2, method = 'unnormalised')
-    res02 <- sclust(X, k = k2, method = 'shi')
-    res03 <- sclust(X, k = k2, method = 'ng')
-  }
-  res04 <- sclust(X, k = k1, method = 'unnormalised')
-  res05 <- sclust(X, k = k1, method = 'shi')
-  res06 <- sclust(X, k = k1, method = 'ng')
-
-  # Algorithms from igraph
-  clu07 <- cluster_edge_betweenness(G)  # Girvan-Newman
-  clu08 <- cluster_fast_greedy(G)
-  clu09 <- cluster_infomap(G)
-  clu10 <- cluster_label_prop(G)
-  clu11 <- cluster_leading_eigen(G)  # Modularity maximisation
-  clu12 <- cluster_louvain(G)
-  clu13 <- cluster_spinglass(G)
-  clu14 <- cluster_walktrap(G)
-  clu15 <- cluster_optimal(G)
-  for (i in sprintf('%02.0f', 7:15)) {
-    assign(paste('res', i, sep = ''),
-           membership(get(paste('clu', i, sep = ''))))
-    assign(paste('com', i, sep = ''),
-           length(unique(get(paste('res', i, sep = '')))))
-  }
-
-  # Print results
-  idxs <- unique(c(ifelse(rep(! is.null(k2), 3), 1:3, rep(4, 3)), 4:15))
-  for (i in sprintf('%02.0f', idxs)) {
-    id <- as.numeric(i)
-    mod <- modularity(G4, membership = get(paste('res', i, sep = '')))
-    assign(paste('mod', i, sep = ''), mod)
-    cat('Method ', i, ': ', round(mod, 4), ' [', algs[id], ']\n', sep = '')
-    cat(sort.clusters(get(paste('res', i, sep = ''))), '\n')
-  }
-}
+comm.detection(X4, G4, 4, nneighbors = 5)
 
 
 
 
 
-res01 <- sclust(X4, k = 7, method = 'unnormalised')
-res02 <- sclust(X4, k = 7, method = 'shi')
-res03 <- sclust(X4, k = 7, method = 'ng')
-res04 <- sclust(X4, k = 4, method = 'unnormalised')
-res05 <- sclust(X4, k = 4, method = 'shi')
-res06 <- sclust(X4, k = 4, method = 'ng')
-
-clu07 <- cluster_edge_betweenness(G4)  # Girvan-Newman
-clu08 <- cluster_fast_greedy(G4)  # Needs undirected graph
-clu09 <- cluster_infomap(G4)
-clu10 <- cluster_label_prop(G4)
-clu11 <- cluster_leading_eigen(G4)
-clu12 <- cluster_louvain(G4)
-clu13 <- cluster_spinglass(G4)
-clu14 <- cluster_walktrap(G4)
-clu15 <- cluster_optimal(G4)
-for (i in sprintf('%02.0f', 7:15)) {
-  assign(paste('res', i, sep = ''),
-         membership(get(paste('clu', i, sep = ''))))
-  assign(paste('com', i, sep = ''),
-         length(unique(get(paste('res', i, sep = '')))))
-}
-
-
-compare(res13, res14)
-
-
-for (i in sprintf('%02.0f', 1:15)) {
-  mod <- modularity(G4, membership = get(paste('res', i, sep = '')))
-  #mod <- modularity(G4, membership = get(paste('res', i, sep = '')), weights = E(G4)$weights)
-  assign(paste('mod', i, sep = ''), mod)
-  cat('Method ', i, ': ', round(mod, 4), '\n', sep = '')
-  cat(sort.clusters(get(paste('res', i, sep = ''))), '\n')
-}
-
-# modularity(G4, membership = res01)
-# modularity(G4, membership = res02)
-# modularity(G4, membership = res03)
-# modularity(G4, membership = res04)
-# modularity(G4, membership = res05)
-# modularity(G4, membership = res06)
-# modularity(G4, membership = res07)
 

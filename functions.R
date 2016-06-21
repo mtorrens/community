@@ -47,6 +47,9 @@ sclust <- function(X, k, method = 'unnormalised', similarity.method = 'covm',
       n <- nrow(X)
       d <- ncol(X)
       epsilon <- log(n) ** d / n
+      if (epsilon > max(S) | epsilon < min(S)) {
+        epsilon <- quantile(S, 1 / k)
+      }
     }
     W <- matrix(rep(0, ncol(S) ** 2), nrow = ncol(S))
     for (j in 1:ncol(W)) {
@@ -89,6 +92,7 @@ sclust <- function(X, k, method = 'unnormalised', similarity.method = 'covm',
   } else {
     Y <- evecs[, idx]
   }
+  Y[is.nan(Y)] <- 0
 
   # Perform k-means
   set.seed(seed)
@@ -103,18 +107,24 @@ sclust <- function(X, k, method = 'unnormalised', similarity.method = 'covm',
 }
 
 ################################################################################
-comm.detection <- function(X, G, k1, k2 = NULL) {
+comm.detection <- function(X, G, k1, k2 = NULL, short = FALSE, ...) {
 ################################################################################
   # Algorithm names
   algs <- c(paste('SC Unnormalised (k = ', k2,')', sep = ''),
             paste('SC Shi-Malik (k = ', k2,')', sep = ''),
-            paste('SC Ng-Weiss-Joran (k = ', k2,')', sep = ''),
+            paste('SC Ng-Weiss-Jordan (k = ', k2,')', sep = ''),
             paste('SC Unnormalised (k = ', k1,')', sep = ''),
             paste('SC Shi-Malik (k = ', k1,')', sep = ''),
-            paste('SC Ng-Weiss-Joran (k = ', k1,')', sep = ''),
+            paste('SC Ng-Weiss-Jordan (k = ', k1,')', sep = ''),
             'Girvan-Newman', 'Fast Greedy', 'Infomap', 'Label propagation',
             'Modularity maximisation', 'Louvain', 'Spinglass', 'Walktrap',
-            'Optimal')
+            'Optimal',
+            paste('SC Unnormalised KNN (k = ', k2,')', sep = ''),
+            paste('SC Unnormalised Eps-N (k = ', k2,')', sep = ''),
+            paste('SC Shi-Malik KNN (k = ', k2,')', sep = ''),
+            paste('SC Shi-Malik Eps-N (k = ', k2,')', sep = ''),
+            paste('SC Ng-Weiss-Jordan KNN (k = ', k2,')', sep = ''),
+            paste('SC Ng-Weiss-Jordan Eps-N (k = ', k2,')', sep = ''))
 
   # Spectral clustering
   if (! is.null(k2)) {
@@ -126,12 +136,19 @@ comm.detection <- function(X, G, k1, k2 = NULL) {
   res05 <- sclust(X, k = k1, method = 'shi')
   res06 <- sclust(X, k = k1, method = 'ng')
 
+  res16 <- sclust(X, k = k1, method = 'unnormalised', similarity.method = 'knn', ...)
+  res17 <- sclust(X, k = k1, method = 'unnormalised', similarity.method = 'e-neigh', ...)
+  res18 <- sclust(X, k = k1, method = 'shi', similarity.method = 'knn', ...)
+  res19 <- sclust(X, k = k1, method = 'shi', similarity.method = 'e-neigh', ...)
+  res20 <- sclust(X, k = k1, method = 'ng', similarity.method = 'knn', ...)
+  res21 <- sclust(X, k = k1, method = 'ng', similarity.method = 'e-neigh', ...)
+
   # Algorithms from igraph
   clu07 <- cluster_edge_betweenness(G)  # Girvan-Newman
   clu08 <- cluster_fast_greedy(G)
   clu09 <- cluster_infomap(G)
   clu10 <- cluster_label_prop(G)
-  clu11 <- cluster_leading_eigen(G)  # Modularity maximisation
+  clu11 <- try(cluster_leading_eigen(G))  # Modularity maximisation
   clu12 <- cluster_louvain(G)
   clu13 <- cluster_spinglass(G)
   clu14 <- cluster_walktrap(G)
@@ -144,10 +161,13 @@ comm.detection <- function(X, G, k1, k2 = NULL) {
   }
 
   # Print results
-  idxs <- unique(c(ifelse(rep(! is.null(k2), 3), 1:3, rep(4, 3)), 4:15))
+  idxs <- unique(c(ifelse(rep(! is.null(k2), 3), 1:3, rep(4, 3)), 4:21))
+  if (short) {
+    idxs <- setdiff(idxs, c(8:10, 12:15))
+  }
   for (i in sprintf('%02.0f', idxs)) {
     id <- as.numeric(i)
-    mod <- modularity(G4, membership = get(paste('res', i, sep = '')))
+    mod <- modularity(G, membership = get(paste('res', i, sep = '')))
     assign(paste('mod', i, sep = ''), mod)
     cat('Method ', i, ': ', round(mod, 4), ' [', algs[id], ']\n', sep = '')
     cat(sort.clusters(get(paste('res', i, sep = ''))), '\n')

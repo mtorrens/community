@@ -118,13 +118,12 @@ comm.detection <- function(X, G, k1, k2 = NULL, short = FALSE, ...) {
             paste('SC Ng-Weiss-Jordan (k = ', k1,')', sep = ''),
             'Girvan-Newman', 'Fast Greedy', 'Infomap', 'Label propagation',
             'Modularity maximisation', 'Louvain', 'Spinglass', 'Walktrap',
-            'Optimal',
-            paste('SC Unnormalised KNN (k = ', k2,')', sep = ''),
-            paste('SC Unnormalised Eps-N (k = ', k2,')', sep = ''),
-            paste('SC Shi-Malik KNN (k = ', k2,')', sep = ''),
-            paste('SC Shi-Malik Eps-N (k = ', k2,')', sep = ''),
-            paste('SC Ng-Weiss-Jordan KNN (k = ', k2,')', sep = ''),
-            paste('SC Ng-Weiss-Jordan Eps-N (k = ', k2,')', sep = ''))
+            'Optimal', paste('SC Unnormalised KNN (k = ', k1,')', sep = ''),
+            paste('SC Unnormalised Eps-N (k = ', k1,')', sep = ''),
+            paste('SC Shi-Malik KNN (k = ', k1,')', sep = ''),
+            paste('SC Shi-Malik Eps-N (k = ', k1,')', sep = ''),
+            paste('SC Ng-Weiss-Jordan KNN (k = ', k1,')', sep = ''),
+            paste('SC Ng-Weiss-Jordan Eps-N (k = ', k1  ,')', sep = ''))
 
   # Spectral clustering
   if (! is.null(k2)) {
@@ -144,15 +143,19 @@ comm.detection <- function(X, G, k1, k2 = NULL, short = FALSE, ...) {
   res21 <- sclust(X, k = k1, method = 'ng', similarity.method = 'e-neigh', ...)
 
   # Algorithms from igraph
+  idxs <- 7:15
   clu07 <- cluster_edge_betweenness(G)  # Girvan-Newman
-  clu08 <- cluster_fast_greedy(G)
-  clu09 <- cluster_infomap(G)
-  clu10 <- cluster_label_prop(G)
   clu11 <- try(cluster_leading_eigen(G))  # Modularity maximisation
-  clu12 <- cluster_louvain(G)
-  clu13 <- cluster_spinglass(G)
-  clu14 <- cluster_walktrap(G)
-  clu15 <- cluster_optimal(G)
+  if (short == TRUE) {
+    clu08 <- cluster_fast_greedy(G)
+    clu09 <- cluster_infomap(G)
+    clu10 <- cluster_label_prop(G)
+    clu12 <- cluster_louvain(G)
+    clu13 <- cluster_spinglass(G)
+    clu14 <- cluster_walktrap(G)
+    clu15 <- cluster_optimal(G)
+    idxs <- c(7, 11)
+  }
   for (i in sprintf('%02.0f', 7:15)) {
     assign(paste('res', i, sep = ''),
            membership(get(paste('clu', i, sep = ''))))

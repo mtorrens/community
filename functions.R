@@ -1,4 +1,12 @@
 ################################################################################
+# Script   : functions.R
+# Descrip. : Community detection functions
+################################################################################
+# Author   : (c) Miquel Torrens, 2016.06.19
+# Modified :     Miquel Torrens, 2016.06.22
+################################################################################
+
+################################################################################
 # Sort the indexes of the clusters resulting from k-means
 sort.clusters <- function(clusts, desc = FALSE) {
 ################################################################################
@@ -144,10 +152,11 @@ comm.detection <- function(X, G, k1, k2 = NULL, short = FALSE, truth = NULL,
   res21 <- sclust(X, k = k1, method = 'ng', similarity.method = 'e-neigh', ...)
 
   # Algorithms from igraph
-  idxs <- 7:15
+  idxs <- c(7, 11)
   clu07 <- cluster_edge_betweenness(G)  # Girvan-Newman
   clu11 <- try(cluster_leading_eigen(G))  # Modularity maximisation
-  if (short == TRUE) {
+  if (short == FALSE) {
+    idxs <- 7:15
     clu08 <- cluster_fast_greedy(G)
     clu09 <- cluster_infomap(G)
     clu10 <- cluster_label_prop(G)
@@ -155,9 +164,8 @@ comm.detection <- function(X, G, k1, k2 = NULL, short = FALSE, truth = NULL,
     clu13 <- cluster_spinglass(G)
     clu14 <- cluster_walktrap(G)
     clu15 <- cluster_optimal(G)
-    idxs <- c(7, 11)
   }
-  for (i in sprintf('%02.0f', 7:15)) {
+  for (i in sprintf('%02.0f', idxs)) {
     assign(paste('res', i, sep = ''),
            membership(get(paste('clu', i, sep = ''))))
     assign(paste('com', i, sep = ''),
@@ -187,4 +195,4 @@ comm.detection <- function(X, G, k1, k2 = NULL, short = FALSE, truth = NULL,
     cat(sort.clusters(optb), '\n')
   }
 }
-
+# END OF SCRIPT

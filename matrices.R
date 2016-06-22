@@ -1,4 +1,12 @@
-# Examples
+################################################################################
+# Script   : matrices.R
+# Descrip. : Covariance matrix designed to test the algorithms
+################################################################################
+# Author   : (c) Miquel Torrens, 2016.06.19
+# Modified :     Miquel Torrens, 2016.06.22
+################################################################################
+
+# Covariance matrices
 WI <- diag(rep(1, 9))
 W0 <- matrix(rep(0.99, 9 ** 2), ncol = 9); diag(W0) <- rep(1, 9)
 W1 <- matrix(c(1, 2/3, 2/3, 1/3, 1/3, 1/3, 0, 0, 0,
@@ -95,15 +103,4 @@ W7 <- matrix(c(1, 2/3, 2/3, 2/3, 2/3, 2/3, rep(1/3, 6), rep(0, 6),
                rep(0, 6), rep(1/3, 6), 2/3, 2/3, 2/3, 1, 2/3, 2/3,
                rep(0, 6), rep(1/3, 6), 2/3, 2/3, 2/3, 2/3, 1, 2/3,
                rep(0, 6), rep(1/3, 6), 2/3, 2/3, 2/3, 2/3, 2/3, 1), ncol = 18)
-
-
-# # Graph forms
-# GI <- graph_from_adjacency_matrix(WI, weighted = TRUE, mode = 'undirected')
-# G0 <- graph_from_adjacency_matrix(W0, weighted = TRUE, mode = 'undirected')
-# G1 <- graph_from_adjacency_matrix(W1, weighted = TRUE, mode = 'undirected')
-# G2 <- graph_from_adjacency_matrix(W2, weighted = TRUE, mode = 'undirected')
-# G3 <- graph_from_adjacency_matrix(W3, weighted = TRUE, mode = 'undirected')
-# G4 <- graph_from_adjacency_matrix(abs(W4), weighted = TRUE, mode = 'undirected')
-# G5 <- graph_from_adjacency_matrix(W5, weighted = TRUE, mode = 'undirected')
-# G6 <- graph_from_adjacency_matrix(W6, weighted = TRUE, mode = 'undirected')
-
+# END OF SCRIPT

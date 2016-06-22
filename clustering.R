@@ -75,14 +75,6 @@ G5 <- graph_from_adjacency_matrix(round(abs(cov(X5)), 2), weighted = w, mode = m
 G6 <- graph_from_adjacency_matrix(round(abs(cov(X6)), 2), weighted = w, mode = m)
 G7 <- graph_from_adjacency_matrix(round(abs(cov(X7)), 2), weighted = w, mode = m)
 
-repeat {
-  aux <- try(comm.detection(XI, GI, 8, short = TRUE, truth = 1:9, silent = TRUE))
-  if (class(aux) != 'try-error') { break }
-}
-repeat {
-  aux <- try(comm.detection(X0, G0, 3, short = TRUE, truth = rep(1, 9)), silent = TRUE)
-  if (class(aux) != 'try-error') { break }
-}
 comm.detection(X1, G1, 3, short = TRUE, truth = mem1)
 comm.detection(X2, G2, 3, short = TRUE, truth = mem1)
 comm.detection(X3, G3, 3, 5, short = TRUE, truth = mem1, optb = mem2)
@@ -90,14 +82,4 @@ comm.detection(X4, G4, 4, 7, short = TRUE, truth = mem3, optb = mem4)
 comm.detection(X5, G5, 3, 7, short = TRUE, truth = mem1, optb = mem5)
 comm.detection(X6, G6, 3, short = TRUE, truth = mem6)
 comm.detection(X7, G7, 3, short = TRUE, truth = mem6)
-
-
-
-
-
-
-
-
-
-
-
+# END OF SCRIPT

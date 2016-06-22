@@ -107,7 +107,8 @@ sclust <- function(X, k, method = 'unnormalised', similarity.method = 'covm',
 }
 
 ################################################################################
-comm.detection <- function(X, G, k1, k2 = NULL, short = FALSE, ...) {
+comm.detection <- function(X, G, k1, k2 = NULL, short = FALSE, truth = NULL,
+                           optb = NULL, ...) {
 ################################################################################
   # Algorithm names
   algs <- c(paste('SC Unnormalised (k = ', k2,')', sep = ''),
@@ -174,6 +175,16 @@ comm.detection <- function(X, G, k1, k2 = NULL, short = FALSE, ...) {
     assign(paste('mod', i, sep = ''), mod)
     cat('Method ', i, ': ', round(mod, 4), ' [', algs[id], ']\n', sep = '')
     cat(sort.clusters(get(paste('res', i, sep = ''))), '\n')
+  }
+  if (! is.null(truth)) {
+    mod <- modularity(G, membership = truth)
+    cat('TRUTH:', round(mod, 4), '\n')
+    cat(sort.clusters(truth), '\n')
+  }
+  if (! is.null(optb)) {
+    mod <- modularity(G, membership = optb)
+    cat('TRUTH (OPT. B):', round(mod, 4), '\n')
+    cat(sort.clusters(optb), '\n')
   }
 }
 

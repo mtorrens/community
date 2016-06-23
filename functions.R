@@ -154,9 +154,9 @@ comm.detection <- function(X, G, k1, k2 = NULL, short = FALSE, truth = NULL,
   res21 <- sclust(X, k = k1, method = 'ng', similarity.method = 'e-neigh', ...)
 
   # Zhang-Newman algorithm
-  res22 <- zhang.newman(A = cor(X), k = k1, verbose = FALSE)
+  res22 <- zhang.newman(A = cor(X), k = k1, verbose = FALSE, no.empty = FALSE)
   if (! is.null(k2)) {
-    res23 <- zhang.newman(A = cor(X), k = k2, verbose = FALSE)
+    res23 <- zhang.newman(A = cor(X), k = k2, verbose = FALSE, no.empty = FALSE)
   }
 
   # Algorithms from igraph
@@ -206,7 +206,8 @@ comm.detection <- function(X, G, k1, k2 = NULL, short = FALSE, truth = NULL,
 }
 
 ################################################################################
-zhang.newman <- function(A, k, no.empty = TRUE, verbose = TRUE, seed = 666) {
+zhang.newman <- function(A, k, max.iter = 1e3, no.empty = TRUE, verbose = TRUE,
+                         seed = 666) {
 ################################################################################
   # if (nrow(A) %% k != 0) {
   #   stop('Number of rows not divisible by number of clusters.')
@@ -254,8 +255,9 @@ zhang.newman <- function(A, k, no.empty = TRUE, verbose = TRUE, seed = 666) {
   # colnames(Rs) <- 1:split
 
   # Loop
-  niter <- 1
+  iter <- 1
   repeat {
+    #cat('\rIter:', iter)
     new.group <- rep(0, nrow(A))
     for (n in 1:ncol(R)) {
       mine <- group[n]
@@ -271,29 +273,40 @@ zhang.newman <- function(A, k, no.empty = TRUE, verbose = TRUE, seed = 666) {
       new.group[n] <- which.max(round(scores, 4))
     }
 
+    # See if results have changed
     if (identical(group, new.group)) {
       if (no.empty == TRUE) {
         if (length(unique(new.group)) != k) {
           alone <- which(! 1:k %in% unique(new.group))
           for (a in alone) {
-            new.group[which(group == a)[1]] <- a  
+            new.group[which(group == a)[1]] <- a
+            if (length(which(new.group == a))) {
+              new.group[sample(1:length(new.group), 1)] <- a
+            }
           }
           group <- new.group
+          iter <- iter + 1
+          if (iter >= max.iter) {
+            if (verbose) { cat('The algorithm did not converge.\n') }
+            break
+          }
         } else {
           group <- new.group
+          iter <- iter + 1
           break
         }
       } else {
         group <- new.group
+        iter <- iter + 1
         break
       }
     } else {
       group <- new.group
-      niter <- niter + 1
+      iter <- iter + 1
     }
   }
 
-  if (verbose) { cat('Number of iterations:', niter, '\n') }
+  if (verbose) { cat('Number of iterations:', iter, '\n') }
   return(sort.clusters(group))
 }
 # END OF SCRIPT

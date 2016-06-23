@@ -132,7 +132,9 @@ comm.detection <- function(X, G, k1, k2 = NULL, short = FALSE, truth = NULL,
             paste('SC Shi-Malik KNN (k = ', k1,')', sep = ''),
             paste('SC Shi-Malik Eps-N (k = ', k1,')', sep = ''),
             paste('SC Ng-Weiss-Jordan KNN (k = ', k1,')', sep = ''),
-            paste('SC Ng-Weiss-Jordan Eps-N (k = ', k1  ,')', sep = ''))
+            paste('SC Ng-Weiss-Jordan Eps-N (k = ', k1, ')', sep = ''),
+            paste('Zhang-Newman (k = ', k1, ')', sep = ''),
+            paste('Zhang-Newman (k = ', k2, ')', sep = ''))
 
   # Spectral clustering
   if (! is.null(k2)) {
@@ -150,6 +152,12 @@ comm.detection <- function(X, G, k1, k2 = NULL, short = FALSE, truth = NULL,
   res19 <- sclust(X, k = k1, method = 'shi', similarity.method = 'e-neigh', ...)
   res20 <- sclust(X, k = k1, method = 'ng', similarity.method = 'knn', ...)
   res21 <- sclust(X, k = k1, method = 'ng', similarity.method = 'e-neigh', ...)
+
+  # Zhang-Newman algorithm
+  res22 <- zhang.newman(A = cor(X), k = k1, verbose = FALSE)
+  if (! is.null(k2)) {
+    res23 <- zhang.newman(A = cor(X), k = k2, verbose = FALSE)
+  }
 
   # Algorithms from igraph
   idxs <- c(7, 11)
@@ -173,7 +181,8 @@ comm.detection <- function(X, G, k1, k2 = NULL, short = FALSE, truth = NULL,
   }
 
   # Print results
-  idxs <- unique(c(ifelse(rep(! is.null(k2), 3), 1:3, rep(4, 3)), 4:21))
+  idxs <- unique(c(ifelse(rep(! is.null(k2), 3), 1:3, rep(4, 3)), 4:22))
+  if (! is.null(k2)) { idxs <- c(idxs, 23) }
   if (short) {
     idxs <- setdiff(idxs, c(8:10, 12:15))
   }
@@ -197,8 +206,11 @@ comm.detection <- function(X, G, k1, k2 = NULL, short = FALSE, truth = NULL,
 }
 
 ################################################################################
-zhang.newman <- function(A, k, verbose = TRUE, seed = 666) {
+zhang.newman <- function(A, k, no.empty = TRUE, verbose = TRUE, seed = 666) {
 ################################################################################
+  # if (nrow(A) %% k != 0) {
+  #   stop('Number of rows not divisible by number of clusters.')
+  # }
   # Construction of B matrix
   d <- A %*% rep(1, nrow(A))
   m <- sum(A) / 2
@@ -220,16 +232,19 @@ zhang.newman <- function(A, k, verbose = TRUE, seed = 666) {
 
   # R vectors
   R <- matrix(rep(NA, nrow(U) * ncol(U)), nrow = nrow(U), ncol = ncol(U))
-  for (i in 1:ncol(R)) {
-    for (el in 1:nrow(R)) {
+  for (i in 1:nrow(R)) {
+    for (el in 1:ncol(R)) {
       R[i, el] <- sqrt(l[el]) * U[i, el]
     }
   }
   R <- t(R)
 
   # Random initialisation
-  split <- nrow(A) / k
-  pool <- as.numeric(sapply(1:split, rep, 3))
+  split <- nrow(A) %/% k
+  remain <- nrow(A) %% k
+  give <- nrow(A) - remain
+  pool <- c(as.numeric(sapply(1:split, rep, give / split)), rep(split, remain))
+  #pool <- as.numeric(sapply(1:split, rep, 3))
   set.seed(seed)
   group <- sample(pool, length(pool), replace = FALSE)
   # Rs <- c()
@@ -241,8 +256,8 @@ zhang.newman <- function(A, k, verbose = TRUE, seed = 666) {
   # Loop
   niter <- 1
   repeat {
-    new.group <- rep(0, nrow(R))
-    for (n in 1:nrow(R)) {
+    new.group <- rep(0, nrow(A))
+    for (n in 1:ncol(R)) {
       mine <- group[n]
       scores <- c()
       for (w in 1:split) {
@@ -257,8 +272,21 @@ zhang.newman <- function(A, k, verbose = TRUE, seed = 666) {
     }
 
     if (identical(group, new.group)) {
-      group <- new.group
-      break
+      if (no.empty == TRUE) {
+        if (length(unique(new.group)) != k) {
+          alone <- which(! 1:k %in% unique(new.group))
+          for (a in alone) {
+            new.group[which(group == a)[1]] <- a  
+          }
+          group <- new.group
+        } else {
+          group <- new.group
+          break
+        }
+      } else {
+        group <- new.group
+        break
+      }
     } else {
       group <- new.group
       niter <- niter + 1

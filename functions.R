@@ -195,4 +195,77 @@ comm.detection <- function(X, G, k1, k2 = NULL, short = FALSE, truth = NULL,
     cat(sort.clusters(optb), '\n')
   }
 }
+
+################################################################################
+zhang.newman <- function(A, k, verbose = TRUE, seed = 666) {
+################################################################################
+  # Construction of B matrix
+  d <- A %*% rep(1, nrow(A))
+  m <- sum(A) / 2
+  B <- matrix(rep(NA, nrow(A) ** 2), nrow = nrow(A), ncol = nrow(A))
+  for (i in 1:nrow(B)) {
+    for (j in 1:ncol(B)) {
+      B[i, j] <- A[i, j] - (d[i] * d[j]) / (2 * m)
+    }
+  }
+
+  # Eigendecomposition
+  U <- eigen(B)$vectors
+  l <- eigen(B)$values
+
+  # Rank p approximation
+  U <- U[, l > 0]
+  l <- l[l > 0]
+  #sum(l * U[i, ] * U[j, ]) == B[i, j]
+
+  # R vectors
+  R <- matrix(rep(NA, nrow(U) * ncol(U)), nrow = nrow(U), ncol = ncol(U))
+  for (i in 1:ncol(R)) {
+    for (el in 1:nrow(R)) {
+      R[i, el] <- sqrt(l[el]) * U[i, el]
+    }
+  }
+  R <- t(R)
+
+  # Random initialisation
+  split <- nrow(A) / k
+  pool <- as.numeric(sapply(1:split, rep, 3))
+  set.seed(seed)
+  group <- sample(pool, length(pool), replace = FALSE)
+  # Rs <- c()
+  # for (w in 1:split) {
+  #   Rs <- cbind(Rs, rowSums(R[, which(group == w)]))
+  # }
+  # colnames(Rs) <- 1:split
+
+  # Loop
+  niter <- 1
+  repeat {
+    new.group <- rep(0, nrow(R))
+    for (n in 1:nrow(R)) {
+      mine <- group[n]
+      scores <- c()
+      for (w in 1:split) {
+        aux <- cbind(R[, which(group == w)], rep(0, nrow(R)))
+        if (w == mine) {
+          scores <- c(scores, t(rowSums(aux) - R[, n]) %*% R[, n])
+        } else {
+          scores <- c(scores, t(rowSums(aux)) %*% R[, n])
+        }
+      }
+      new.group[n] <- which.max(round(scores, 4))
+    }
+
+    if (identical(group, new.group)) {
+      group <- new.group
+      break
+    } else {
+      group <- new.group
+      niter <- niter + 1
+    }
+  }
+
+  if (verbose) { cat('Number of iterations:', niter, '\n') }
+  return(sort.clusters(group))
+}
 # END OF SCRIPT

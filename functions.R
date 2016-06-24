@@ -3,7 +3,9 @@
 # Descrip. : Community detection functions
 ################################################################################
 # Author   : (c) Miquel Torrens, 2016.06.19
-# Modified :     Miquel Torrens, 2016.06.22
+# Modified :     Miquel Torrens, 2016.06.24
+################################################################################
+# source('~/Desktop/community/functions.R')
 ################################################################################
 
 ################################################################################
@@ -186,14 +188,18 @@ zhang.newman <- function(A, k, max.iter = 1e3, no.empty = TRUE, verbose = TRUE,
     } else {
       group <- new.group
       if (iter >= max.iter) {
-        if (verbose) { cat('Warning: The algorithm did not converge.\n') }
+        if (verbose == TRUE) {
+          cat('Warning: The algorithm did not converge.\n')
+        }
         break
       }
       iter <- iter + 1
     }
   }
 
-  if (verbose) { cat('Number of iterations:', iter, '\n') }
+  if (verbose == TRUE) {
+    cat('Number of iterations:', iter, '\n')
+  }
   return(sort.clusters(group))
 }
 
@@ -219,7 +225,7 @@ comm.detection <- function(X, G, k1, k2 = NULL, short = FALSE, truth = NULL,
             paste('Zhang-Newman (k = ', k1, ')', sep = ''),
             paste('Zhang-Newman (Forced k = ', k1, ')', sep = ''),
             paste('Zhang-Newman (k = ', k2, ')', sep = ''),
-            paste('Zhang-Newman (Forced k = ', k1, ')', sep = ''))
+            paste('Zhang-Newman (Forced k = ', k2, ')', sep = ''))
 
   # Spectral clustering
   if (! is.null(k2)) {

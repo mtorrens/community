@@ -10,7 +10,9 @@
 
 ################################################################################
 # Parameters
-rounded <- TRUE
+rounded <- TRUE    # Should the covariance matrix be rounded
+w <- TRUE          # Are the graphs weighted
+m <- 'undirected'  # Are the graphs undirected
 
 # Dependencies
 require(igraph)
@@ -19,7 +21,7 @@ require(mvtnorm)
 # Load sample matrices
 source('~/Desktop/community/functions.R')
 source('~/Desktop/community/matrices.R')
-gfam <- graph_from_adjacency_matrix
+gfam <- igraph::graph_from_adjacency_matrix
 
 # Matrices
 set.seed(666)
@@ -47,8 +49,6 @@ mem6 <- c(rep(1, 6), rep(2, 6), rep(3, 6))
 # Choose if the sample correlations should be rounded
 if (rounded == TRUE) {
   # Graph objects
-  w <- TRUE
-  m <- 'undirected'
   G0 <- gfam(abs(cor(X0)), weighted = w, mode = m)
   G1 <- gfam(abs(cor(X1)), weighted = w, mode = m)
   G2 <- gfam(abs(cor(X2)), weighted = w, mode = m)

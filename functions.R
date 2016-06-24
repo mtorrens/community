@@ -115,6 +115,89 @@ sclust <- function(X, k, method = 'unnormalised', similarity.method = 'covm',
 }
 
 ################################################################################
+zhang.newman <- function(A, k, max.iter = 1e3, no.empty = TRUE, verbose = TRUE,
+                         seed = 666) {
+################################################################################
+  # Construction of B matrix
+  d <- A %*% rep(1, nrow(A))
+  m <- sum(A) / 2
+  B <- matrix(rep(NA, nrow(A) ** 2), nrow = nrow(A), ncol = nrow(A))
+  for (i in 1:nrow(B)) {
+    for (j in 1:ncol(B)) {
+      B[i, j] <- A[i, j] - (d[i] * d[j]) / (2 * m)
+    }
+  }
+
+  # Eigendecomposition
+  U <- eigen(B)$vectors
+  l <- eigen(B)$values
+
+  # Rank p approximation
+  U <- U[, l > 0]
+  l <- l[l > 0]
+
+  # R vectors
+  R <- matrix(rep(NA, nrow(U) * ncol(U)), nrow = nrow(U), ncol = ncol(U))
+  for (i in 1:nrow(R)) {
+    for (el in 1:ncol(R)) {
+      R[i, el] <- sqrt(l[el]) * U[i, el]
+    }
+  }
+  R <- t(R)
+
+  # Random initialisation
+  split <- nrow(A) %/% k
+  remain <- nrow(A) %% k
+  set.seed(seed)
+  pool <- c(as.numeric(sapply(1:k, rep, split)), sample(1:k, remain))  
+  group <- sample(pool, length(pool), replace = FALSE)
+
+  # Loop
+  iter <- 1
+  repeat {
+    #cat('\rIter:', iter)
+    new.group <- rep(0, nrow(A))
+    for (n in 1:ncol(R)) {
+      mine <- group[n]
+      scores <- c()
+      for (w in 1:k) {
+        aux <- cbind(R[, which(group == w)], rep(0, nrow(R)))
+        if (w == mine) {
+          scores <- c(scores, t(rowSums(aux) - R[, n]) %*% R[, n])
+        } else {
+          scores <- c(scores, t(rowSums(aux)) %*% R[, n])
+        }
+      }
+      new.group[n] <- which.max(scores)
+    }
+
+    # Do not leave any cluster behind
+    while (no.empty == TRUE & length(unique(new.group)) != k) {
+      alone <- which(! 1:k %in% unique(new.group))
+      for (a in alone) {
+        new.group[which(group == a)[1]] <- a
+      }
+    }
+
+    # See if results have changed
+    if (identical(group, new.group)) {
+      group <- new.group
+      break
+    } else {
+      group <- new.group
+      if (iter >= max.iter) {
+        if (verbose) { cat('Warning: The algorithm did not converge.\n') }
+        break
+      }
+      iter <- iter + 1
+    }
+  }
+
+  if (verbose) { cat('Number of iterations:', iter, '\n') }
+  return(sort.clusters(group))
+}
+
+################################################################################
 comm.detection <- function(X, G, k1, k2 = NULL, short = FALSE, truth = NULL,
                            optb = NULL, ...) {
 ################################################################################
@@ -134,7 +217,9 @@ comm.detection <- function(X, G, k1, k2 = NULL, short = FALSE, truth = NULL,
             paste('SC Ng-Weiss-Jordan KNN (k = ', k1,')', sep = ''),
             paste('SC Ng-Weiss-Jordan Eps-N (k = ', k1, ')', sep = ''),
             paste('Zhang-Newman (k = ', k1, ')', sep = ''),
-            paste('Zhang-Newman (k = ', k2, ')', sep = ''))
+            paste('Zhang-Newman (Forced k = ', k1, ')', sep = ''),
+            paste('Zhang-Newman (k = ', k2, ')', sep = ''),
+            paste('Zhang-Newman (Forced k = ', k1, ')', sep = ''))
 
   # Spectral clustering
   if (! is.null(k2)) {
@@ -146,17 +231,21 @@ comm.detection <- function(X, G, k1, k2 = NULL, short = FALSE, truth = NULL,
   res05 <- sclust(X, k = k1, method = 'shi')
   res06 <- sclust(X, k = k1, method = 'ng')
 
-  res16 <- sclust(X, k = k1, method = 'unnormalised', similarity.method = 'knn', ...)
-  res17 <- sclust(X, k = k1, method = 'unnormalised', similarity.method = 'e-neigh', ...)
-  res18 <- sclust(X, k = k1, method = 'shi', similarity.method = 'knn', ...)
-  res19 <- sclust(X, k = k1, method = 'shi', similarity.method = 'e-neigh', ...)
-  res20 <- sclust(X, k = k1, method = 'ng', similarity.method = 'knn', ...)
-  res21 <- sclust(X, k = k1, method = 'ng', similarity.method = 'e-neigh', ...)
+  if (short == FALSE) {
+    res16 <- sclust(X, k = k1, method = 'unnormalised', similarity.method = 'knn', ...)
+    res17 <- sclust(X, k = k1, method = 'unnormalised', similarity.method = 'e-neigh', ...)
+    res18 <- sclust(X, k = k1, method = 'shi', similarity.method = 'knn', ...)
+    res19 <- sclust(X, k = k1, method = 'shi', similarity.method = 'e-neigh', ...)
+    res20 <- sclust(X, k = k1, method = 'ng', similarity.method = 'knn', ...)
+    res21 <- sclust(X, k = k1, method = 'ng', similarity.method = 'e-neigh', ...)
+  }
 
   # Zhang-Newman algorithm
   res22 <- zhang.newman(A = cor(X), k = k1, verbose = FALSE, no.empty = FALSE)
+  res23 <- zhang.newman(A = cor(X), k = k1, verbose = FALSE, no.empty = TRUE)
   if (! is.null(k2)) {
-    res23 <- zhang.newman(A = cor(X), k = k2, verbose = FALSE, no.empty = FALSE)
+    res24 <- zhang.newman(A = cor(X), k = k2, verbose = FALSE, no.empty = FALSE)
+    res25 <- zhang.newman(A = cor(X), k = k2, verbose = FALSE, no.empty = TRUE)
   }
 
   # Algorithms from igraph
@@ -181,10 +270,10 @@ comm.detection <- function(X, G, k1, k2 = NULL, short = FALSE, truth = NULL,
   }
 
   # Print results
-  idxs <- unique(c(ifelse(rep(! is.null(k2), 3), 1:3, rep(4, 3)), 4:22))
-  if (! is.null(k2)) { idxs <- c(idxs, 23) }
+  idxs <- unique(c(ifelse(rep(! is.null(k2), 3), 1:3, rep(4, 3)), 4:23))
+  if (! is.null(k2)) { idxs <- c(idxs, 24:25) }
   if (short) {
-    idxs <- setdiff(idxs, c(8:10, 12:15))
+    idxs <- setdiff(idxs, c(8:10, 12:21))
   }
   for (i in sprintf('%02.0f', idxs)) {
     id <- as.numeric(i)
@@ -203,110 +292,5 @@ comm.detection <- function(X, G, k1, k2 = NULL, short = FALSE, truth = NULL,
     cat('TRUTH (OPT. B):', round(mod, 4), '\n')
     cat(sort.clusters(optb), '\n')
   }
-}
-
-################################################################################
-zhang.newman <- function(A, k, max.iter = 1e3, no.empty = TRUE, verbose = TRUE,
-                         seed = 666) {
-################################################################################
-  # if (nrow(A) %% k != 0) {
-  #   stop('Number of rows not divisible by number of clusters.')
-  # }
-  # Construction of B matrix
-  d <- A %*% rep(1, nrow(A))
-  m <- sum(A) / 2
-  B <- matrix(rep(NA, nrow(A) ** 2), nrow = nrow(A), ncol = nrow(A))
-  for (i in 1:nrow(B)) {
-    for (j in 1:ncol(B)) {
-      B[i, j] <- A[i, j] - (d[i] * d[j]) / (2 * m)
-    }
-  }
-
-  # Eigendecomposition
-  U <- eigen(B)$vectors
-  l <- eigen(B)$values
-
-  # Rank p approximation
-  U <- U[, l > 0]
-  l <- l[l > 0]
-  #sum(l * U[i, ] * U[j, ]) == B[i, j]
-
-  # R vectors
-  R <- matrix(rep(NA, nrow(U) * ncol(U)), nrow = nrow(U), ncol = ncol(U))
-  for (i in 1:nrow(R)) {
-    for (el in 1:ncol(R)) {
-      R[i, el] <- sqrt(l[el]) * U[i, el]
-    }
-  }
-  R <- t(R)
-
-  # Random initialisation
-  split <- nrow(A) %/% k
-  remain <- nrow(A) %% k
-  give <- nrow(A) - remain
-  pool <- c(as.numeric(sapply(1:split, rep, give / split)), rep(split, remain))
-  #pool <- as.numeric(sapply(1:split, rep, 3))
-  set.seed(seed)
-  group <- sample(pool, length(pool), replace = FALSE)
-  # Rs <- c()
-  # for (w in 1:split) {
-  #   Rs <- cbind(Rs, rowSums(R[, which(group == w)]))
-  # }
-  # colnames(Rs) <- 1:split
-
-  # Loop
-  iter <- 1
-  repeat {
-    #cat('\rIter:', iter)
-    new.group <- rep(0, nrow(A))
-    for (n in 1:ncol(R)) {
-      mine <- group[n]
-      scores <- c()
-      for (w in 1:split) {
-        aux <- cbind(R[, which(group == w)], rep(0, nrow(R)))
-        if (w == mine) {
-          scores <- c(scores, t(rowSums(aux) - R[, n]) %*% R[, n])
-        } else {
-          scores <- c(scores, t(rowSums(aux)) %*% R[, n])
-        }
-      }
-      new.group[n] <- which.max(round(scores, 4))
-    }
-
-    # See if results have changed
-    if (identical(group, new.group)) {
-      if (no.empty == TRUE) {
-        if (length(unique(new.group)) != k) {
-          alone <- which(! 1:k %in% unique(new.group))
-          for (a in alone) {
-            new.group[which(group == a)[1]] <- a
-            if (length(which(new.group == a))) {
-              new.group[sample(1:length(new.group), 1)] <- a
-            }
-          }
-          group <- new.group
-          iter <- iter + 1
-          if (iter >= max.iter) {
-            if (verbose) { cat('The algorithm did not converge.\n') }
-            break
-          }
-        } else {
-          group <- new.group
-          iter <- iter + 1
-          break
-        }
-      } else {
-        group <- new.group
-        iter <- iter + 1
-        break
-      }
-    } else {
-      group <- new.group
-      iter <- iter + 1
-    }
-  }
-
-  if (verbose) { cat('Number of iterations:', iter, '\n') }
-  return(sort.clusters(group))
 }
 # END OF SCRIPT

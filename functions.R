@@ -92,6 +92,7 @@ sclust <- function(X, k, method = 'unnormalised', similarity.method = 'covm',
   # Compute kmeans on last k eigenvectors
   idx <- (length(evals) - k + 1):length(evals)  # Luxburg
   if (method == 'ng') {
+    idx <- 1:k
     # Build Y with normalized rows of X
     Z <- evecs[, idx]
     Y <- Z
@@ -247,8 +248,8 @@ comm.detection <- function(X, G, k1, k2 = NULL, short = FALSE, truth = NULL,
   }
 
   # Zhang-Newman algorithm
-  res22 <- zhang.newman(A = cor(X), k = k1, verbose = FALSE, no.empty = FALSE)
-  res23 <- zhang.newman(A = cor(X), k = k1, verbose = FALSE, no.empty = TRUE)
+  res22 <- zhang.newman(A = round(cor(X), 2), k = k1, verbose = FALSE, no.empty = FALSE)
+  res23 <- zhang.newman(A = round(cor(X), 2), k = k1, verbose = FALSE, no.empty = TRUE)
   if (! is.null(k2)) {
     res24 <- zhang.newman(A = cor(X), k = k2, verbose = FALSE, no.empty = FALSE)
     res25 <- zhang.newman(A = cor(X), k = k2, verbose = FALSE, no.empty = TRUE)

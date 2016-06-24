@@ -89,10 +89,22 @@ if (rounded == TRUE) {
   G7 <- gfam(round(abs(cor(X7)), 2), weighted = w, mode = m)
   G8 <- gfam(round(abs(cor(X8)), 2), weighted = w, mode = m)
 
+  # Algorithms
+  repeat {
+    aux <- try(comm.detection(X0, G0, 8, short = TRUE, truth = 1:9),
+               silent = TRUE)
+    if (class(aux) != 'try-error') { break }
+  }
+  repeat {
+    aux <- try(comm.detection(X1, G1, 3, short = TRUE, truth = rep(1, 9)),
+               silent = TRUE)
+    if (class(aux) != 'try-error') { break }
+  }
   comm.detection(X2, G2, 3, short = TRUE, truth = mem1)
   comm.detection(X3, G3, 3, short = TRUE, truth = mem1)
   comm.detection(X4, G4, 3, 5, short = TRUE, truth = mem1, optb = mem2)
-  comm.detection(X5, G5, 3, 7, short = TRUE, truth = mem1, optb = mem5)
+  #comm.detection(X5, G5, 3, 7, short = TRUE, truth = mem1, optb = mem5)
+  comm.detection(X5, G5, 5, 7, short = TRUE, truth = mem2, optb = mem5)
   comm.detection(X6, G6, 3, short = TRUE, truth = mem6)
   comm.detection(X7, G7, 3, short = TRUE, truth = mem6)
   comm.detection(X8, G8, 4, 7, short = TRUE, truth = mem3, optb = mem4)

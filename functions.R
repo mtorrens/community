@@ -3,7 +3,7 @@
 # Descrip. : Community detection functions
 ################################################################################
 # Author   : (c) Miquel Torrens, 2016.06.19
-# Modified :     Miquel Torrens, 2016.06.24
+# Modified :     Miquel Torrens, 2016.06.25
 ################################################################################
 # source('~/Desktop/community/functions.R')
 ################################################################################
@@ -158,7 +158,6 @@ zhang.newman <- function(A, k, max.iter = 1e3, no.empty = TRUE, verbose = TRUE,
   # Loop
   iter <- 1
   repeat {
-    #cat('\rIter:', iter)
     new.group <- rep(0, nrow(A))
     for (n in 1:ncol(R)) {
       mine <- group[n]
@@ -239,20 +238,21 @@ comm.detection <- function(X, G, k1, k2 = NULL, short = FALSE, truth = NULL,
   res06 <- sclust(X, k = k1, method = 'ng')
 
   if (short == FALSE) {
-    res16 <- sclust(X, k = k1, method = 'unnormalised', similarity.method = 'knn', ...)
-    res17 <- sclust(X, k = k1, method = 'unnormalised', similarity.method = 'e-neigh', ...)
-    res18 <- sclust(X, k = k1, method = 'shi', similarity.method = 'knn', ...)
-    res19 <- sclust(X, k = k1, method = 'shi', similarity.method = 'e-neigh', ...)
-    res20 <- sclust(X, k = k1, method = 'ng', similarity.method = 'knn', ...)
-    res21 <- sclust(X, k = k1, method = 'ng', similarity.method = 'e-neigh', ...)
+    res16 <- sclust(X, k1, method = 'unnormalised', similarity.method = 'knn', ...)
+    res17 <- sclust(X, k1, method = 'unnormalised', similarity.method = 'e-neigh', ...)
+    res18 <- sclust(X, k1, method = 'shi', similarity.method = 'knn', ...)
+    res19 <- sclust(X, k1, method = 'shi', similarity.method = 'e-neigh', ...)
+    res20 <- sclust(X, k1, method = 'ng', similarity.method = 'knn', ...)
+    res21 <- sclust(X, k1, method = 'ng', similarity.method = 'e-neigh', ...)
   }
 
   # Zhang-Newman algorithm
-  res22 <- zhang.newman(A = round(cor(X), 2), k = k1, verbose = FALSE, no.empty = FALSE)
-  res23 <- zhang.newman(A = round(cor(X), 2), k = k1, verbose = FALSE, no.empty = TRUE)
+  S <- round(cor(X), 2)
+  res22 <- zhang.newman(A = S, k = k1, verbose = FALSE, no.empty = FALSE)
+  res23 <- zhang.newman(A = S, k = k1, verbose = FALSE, no.empty = TRUE)
   if (! is.null(k2)) {
-    res24 <- zhang.newman(A = cor(X), k = k2, verbose = FALSE, no.empty = FALSE)
-    res25 <- zhang.newman(A = cor(X), k = k2, verbose = FALSE, no.empty = TRUE)
+    res24 <- zhang.newman(A = S, k = k2, verbose = FALSE, no.empty = FALSE)
+    res25 <- zhang.newman(A = S, k = k2, verbose = FALSE, no.empty = TRUE)
   }
 
   # Algorithms from igraph
